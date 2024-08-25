@@ -83,6 +83,12 @@ func runGUI() {
 	outputFilePathContainer := container.NewBorder(nil, nil, nil, browseButton, outputFilePathEntry)
 
 	sampleDataCheck := widget.NewCheck(l.T(l.MsgSampleData), func(checked bool) {
+		// Log the state change
+		if checked {
+			log.Println("Sample data activated")
+		} else {
+			log.Println("Sample data deactivated")
+		}
 		// Toggle entry fields based on the checkbox state
 		setEntryFieldsEnabled(checked, minIntensityEntry, maxIntensityEntry, minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry, nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
 	})
