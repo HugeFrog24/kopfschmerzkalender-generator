@@ -456,7 +456,7 @@ func checkForUpdates(w fyne.Window) {
 		}
 
 		currentVersion := GetCurrentVersion()
-		log.Printf("Current version: %s, Latest version: %s", currentVersion, latestVersion)
+		log.Printf("Current version: %s, latest version: %s", currentVersion, latestVersion)
 
 		if latestVersion.GT(currentVersion) {
 			log.Println("Update available")
