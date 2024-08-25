@@ -27,9 +27,13 @@ func runGUI() {
 	minDaysBetweenMedicationEntry := widget.NewEntry()
 	maxDaysBetweenMedicationEntry := widget.NewEntry()
 	nameEntry := widget.NewEntry()
+	nameEntry.SetPlaceHolder("Max Mustermann")
 	medicationAEntry := widget.NewEntry()
+	medicationAEntry.SetPlaceHolder("e.g., Ibuprofen 800")
 	medicationBEntry := widget.NewEntry()
+	medicationBEntry.SetPlaceHolder("e.g., Thomapyrin Duo")
 	medicationCEntry := widget.NewEntry()
+	medicationCEntry.SetPlaceHolder("e.g. Naproxen 500")
 	outputFilePathEntry := widget.NewEntry()
 	outputFilePathEntry.SetPlaceHolder("Leave empty for default path")
 
@@ -67,9 +71,6 @@ func runGUI() {
 	maxIntensityEntry.SetText("10") // Pre-populate with 10
 	minDaysBetweenMedicationEntry.SetText("5")
 	maxDaysBetweenMedicationEntry.SetText("9")
-	nameEntry.SetText("Max Mustermann")
-	medicationAEntry.SetText("Ibuprofen 800")
-	medicationBEntry.SetText("Thomapyrin Duo")
 
 	// Create a slice to hold the selected months
 	selectedMonths := make([]string, 0)
