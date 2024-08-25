@@ -346,7 +346,6 @@ func createMonthsSelection(selectedMonths *[]string) *fyne.Container {
 				}
 			}
 			checkGroup.SetSelected(*selectedMonths)
-			log.Printf("Updated selected months: %v\n", *selectedMonths)
 		})
 		grid.Add(check)
 	}
