@@ -2,13 +2,16 @@ package localization
 
 import (
 	"log"
+	"sync"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
 
 var (
-	printer *message.Printer
+	printer     *message.Printer
+	currentLang language.Tag
+	mu          sync.Mutex
 )
 
 func init() {
@@ -19,7 +22,15 @@ func init() {
 }
 
 func SetLanguage(lang language.Tag) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if printer != nil && currentLang == lang {
+		return
+	}
+
 	printer = message.NewPrinter(lang)
+	currentLang = lang
 	log.Printf("Language set to: %s", lang)
 }
 
