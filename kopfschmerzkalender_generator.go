@@ -1,24 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/xuri/excelize/v2"
 )
 
-func main() {
-	f := excelize.NewFile()
-	defer func() {
-		if err := f.Close(); err != nil {
-			fmt.Println(err)
-		}
-	}()
-
-	sheetName := "Kopfschmerzkalender"
+func createSheet(f *excelize.File, sheetName, month string, config Config) {
+	fmt.Printf("Creating sheet: %s, month: %s\n", sheetName, month)
 	index, err := f.NewSheet(sheetName)
 	if err != nil {
 		fmt.Println(err)
@@ -68,31 +62,64 @@ func main() {
 	f.MergeCell(sheetName, "B6", "K6")
 	f.MergeCell(sheetName, "B7", "K7")
 
+	// Set medication names from config
+	f.SetCellValue(sheetName, "B5", config.MedicationA)
+	f.SetCellValue(sheetName, "B6", config.MedicationB)
+	f.SetCellValue(sheetName, "B7", config.MedicationC)
+
 	f.SetCellValue(sheetName, "L3", "Name")
 	f.MergeCell(sheetName, "M3", "U3")
+	f.SetCellValue(sheetName, "M3", config.Name) // Set the name from config
 	f.SetCellValue(sheetName, "L5", "Monat")
 	f.MergeCell(sheetName, "M5", "U5")
 
 	// Add main table headers
 	headers := []string{"Tag", "Aus-löser", "Stärke", "Dauer (h)", "Pulsierend/ stechend", "Dumpf/ drückend", "Einseitig", "Beidseitig", "Vor-boten", "Erbrechen", "Übelkeit"}
 	for i, header := range headers {
-		cell := fmt.Sprintf("%c9", 'A'+i)
+		cell := fmt.Sprintf("%c10", 'A'+i)
 		f.SetCellValue(sheetName, cell, header)
 	}
 
 	// Add accompanying symptoms headers
 	symptoms := []string{"Lärm-empfindl.", "Licht-empfindl.", "Geruchs-empfindl.", "Andere Symptome", "Medikament", "Tropfen/ Tabletten/ Zäpfchen", "Ja", "Nein", "Wenig"}
 	for i, symptom := range symptoms {
-		cell := fmt.Sprintf("%c9", 'L'+i)
+		cell := fmt.Sprintf("%c10", 'L'+i)
 		f.SetCellValue(sheetName, cell, symptom)
+	}
+
+	// Add new Oberbegriffe
+	oberBegriffe := []string{"Schmerzart und Ort", "Begleitsymptome", "Anzahl der", "Hat Ihnen das Mittel geholfen?"}
+	oberBegriffeColumns := []string{"A9:H9", "I9:O9", "P9:Q9", "R9:T9"}
+	for i, begriff := range oberBegriffe {
+		f.SetCellValue(sheetName, oberBegriffeColumns[i][:2], begriff)
+		f.MergeCell(sheetName, oberBegriffeColumns[i][:2], oberBegriffeColumns[i][3:])
+	}
+
+	// Set style for Oberbegriffe
+	oberBegriffeStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Size: 10},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"D9D9D9"}, Pattern: 1},
+		Border:    []excelize.Border{{Type: "all", Color: "000000", Style: 1}},
+	})
+	f.SetCellStyle(sheetName, "A9", "T9", oberBegriffeStyle)
+
+	// Add main table headers (combined with accompanying symptoms)
+	headers = []string{
+		"Tag", "Aus-löser", "Stärke", "Dauer (h)", "Pulsierend/ stechend", "Dumpf/ drückend", "Einseitig", "Beidseitig", "Vor-boten", "Erbrechen", "Übelkeit",
+		"Lärm-empfindl.", "Licht-empfindl.", "Geruchs-empfindl.", "Andere Symptome", "Medikament", "Tropfen/ Tabletten/ Zäpfchen", "Ja", "Nein", "Wenig",
+	}
+	for i, header := range headers {
+		cell := fmt.Sprintf("%c10", 'A'+i)
+		f.SetCellValue(sheetName, cell, header)
 	}
 
 	// Add day numbers and create table grid
 	for i := 1; i <= 31; i++ {
-		row := 10 + i
+		row := 11 + i
 		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), i)
-		f.SetCellValue(sheetName, fmt.Sprintf("X%d", row), i)
-		for col := 'A'; col <= 'X'; col++ {
+		f.SetCellValue(sheetName, fmt.Sprintf("U%d", row), i)
+		for col := 'A'; col <= 'T'; col++ {
 			f.SetCellStyle(sheetName, fmt.Sprintf("%c%d", col, row), fmt.Sprintf("%c%d", col, row), getBorderedCellStyle(f))
 		}
 	}
@@ -123,22 +150,19 @@ func main() {
 	f.SetCellValue(sheetName, "A66", "R  Augenrötung")
 	f.SetCellValue(sheetName, "A67", "N  Nasenlaufen / -Verstopfung")
 
-	// Check for command-line argument to add sample data
-	if len(os.Args) > 1 && os.Args[1] == "--sample" {
-		addSampleData(f, sheetName)
-		fmt.Println("Sample data added to the spreadsheet.")
+	// Set month if provided
+	if month != "" {
+		f.SetCellValue(sheetName, "M5", month)
+	}
+
+	// Check config to add sample data
+	if config.SampleData {
+		addSampleData(f, sheetName, config)
 	}
 
 	// Add borders and styling to the entire table
-	f.SetCellStyle(sheetName, "A9", "X9", getHeaderStyle(f))
-	f.SetCellStyle(sheetName, "A10", "X41", getBorderedCellStyle(f))
-
-	// Save the file
-	if err := f.SaveAs("Kopfschmerzkalender.xlsx"); err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("Excel file created successfully: Kopfschmerzkalender.xlsx")
+	f.SetCellStyle(sheetName, "A9", "U10", getHeaderStyle(f))
+	f.SetCellStyle(sheetName, "A11", "X42", getBorderedCellStyle(f))
 }
 
 func getHeaderStyle(f *excelize.File) int {
@@ -158,20 +182,80 @@ func getBorderedCellStyle(f *excelize.File) int {
 	return style
 }
 
-func addSampleData(f *excelize.File, sheetName string) {
+func addSampleData(f *excelize.File, sheetName string, config Config) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
+	nextMedicationDay := 1
+	medicationIndex := 0
+
+	// Create a slice of valid medication letters and names
+	var validMedications []string
+	var medicationNames []string
+	if config.MedicationA != "" {
+		validMedications = append(validMedications, "A")
+		medicationNames = append(medicationNames, config.MedicationA)
+	}
+	if config.MedicationB != "" {
+		validMedications = append(validMedications, "B")
+		medicationNames = append(medicationNames, config.MedicationB)
+	}
+	if config.MedicationC != "" {
+		validMedications = append(validMedications, "C")
+		medicationNames = append(medicationNames, config.MedicationC)
+	}
+
 	for i := 1; i <= 31; i++ {
-		row := 10 + i
+		row := 11 + i
 
-		// Set "24h" for duration
-		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), "24h")
+		// Set "24 h" for duration
+		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), "24 h")
 
-		// Generate random strength between 5 and 10
-		strength := r.Intn(6) + 5
+		// Generate random strength between min and max intensity
+		strength := r.Intn(config.MaxIntensity-config.MinIntensity+1) + config.MinIntensity
 		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), strength)
 
 		// Set "x" for Dumpf/drückend
 		f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), "x")
+
+		// Set "x" for Lärm-empfindl., Licht-empfindl., and Geruchs-empfindl.
+		f.SetCellValue(sheetName, fmt.Sprintf("L%d", row), "x")
+		f.SetCellValue(sheetName, fmt.Sprintf("M%d", row), "x")
+		f.SetCellValue(sheetName, fmt.Sprintf("N%d", row), "x")
+
+		// Add medication data every minDays to maxDays
+		if i == nextMedicationDay && len(validMedications) > 0 {
+			// Set medication letter
+			medication := validMedications[medicationIndex]
+			f.SetCellValue(sheetName, fmt.Sprintf("P%d", row), medication)
+
+			// Set helpfulness (randomly NOT HELPS or HELPS A BIT)
+			if r.Intn(2) == 0 {
+				f.SetCellValue(sheetName, fmt.Sprintf("S%d", row), "x") // NOT HELPS
+			} else {
+				f.SetCellValue(sheetName, fmt.Sprintf("T%d", row), "x") // HELPS A BIT
+			}
+
+			// Update next medication day and medication index
+			nextMedicationDay += r.Intn(config.MaxDaysBetweenMedication-config.MinDaysBetweenMedication+1) + config.MinDaysBetweenMedication
+			medicationIndex = (medicationIndex + 1) % len(validMedications)
+		}
 	}
+
+	// Modify the log statement
+	if len(validMedications) > 0 {
+		fmt.Printf("Sample data added to the spreadsheet '%s'. Medication applied every %d to %d days. Medications: %s\n",
+			sheetName, config.MinDaysBetweenMedication, config.MaxDaysBetweenMedication, strings.Join(medicationNames, ", "))
+	} else {
+		fmt.Printf("Sample data added to the spreadsheet '%s'. No medication applied.\n", sheetName)
+	}
+}
+
+func readConfig(filename string) (Config, error) {
+	var config Config
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return config, err
+	}
+	err = json.Unmarshal(data, &config)
+	return config, err
 }

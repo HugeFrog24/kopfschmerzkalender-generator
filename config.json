@@ -1,0 +1,18 @@
+{
+  "sample_data": true,
+  "min_days_between_medication": 5,
+  "max_days_between_medication": 9,
+  "months": [
+    "Januar",
+    "Februar",
+    "März",
+    "April"
+  ],
+  "name": "Max Mustermann",
+  "medication_a": "Ibuprofen 800",
+  "medication_b": "Thomapyrin Duo",
+  "medication_c": "",
+  "output_file_path": "",
+  "min_intensity": 5,
+  "max_intensity": 10
+}
