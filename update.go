@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	CurrentVersion     = semver.MustParse("1.0.1")
+	CurrentVersion     = semver.MustParse("1.0.2")
 	ErrUpdateCancelled = errors.New("update cancelled by user")
 )
 
