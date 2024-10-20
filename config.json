@@ -6,13 +6,21 @@
     "Januar",
     "Februar",
     "März",
-    "April"
+    "April",
+    "Januar",
+    "Februar",
+    "Mai",
+    "Januar",
+    "April",
+    "Juli"
   ],
-  "name": "Max Mustermann",
-  "medication_a": "Ibuprofen 800",
-  "medication_b": "Thomapyrin Duo",
+  "name": "",
+  "medication_a": "sss",
+  "medication_b": "s0so",
   "medication_c": "",
-  "output_file_path": "",
+  "output_file_path": "C:/Users/Sergej/Desktop/Kopfschmerzkalender.xlsx",
   "min_intensity": 5,
-  "max_intensity": 10
+  "max_intensity": 10,
+  "min_duration_hours": 1,
+  "max_duration_hours": 24
 }

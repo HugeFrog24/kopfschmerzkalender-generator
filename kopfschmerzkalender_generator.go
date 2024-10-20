@@ -207,17 +207,18 @@ func addSampleData(f *excelize.File, sheetName string, config Config) {
 	for i := 1; i <= 31; i++ {
 		row := 11 + i
 
-		// Set "24 h" for duration
-		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), "24 h")
+		// Set "Dauer (h)" to a random value between min and max
+		duration := r.Intn(config.MaxDurationHours-config.MinDurationHours+1) + config.MinDurationHours
+		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), fmt.Sprintf("%d h", duration))
 
 		// Generate random strength between min and max intensity
 		strength := r.Intn(config.MaxIntensity-config.MinIntensity+1) + config.MinIntensity
 		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), strength)
 
-		// Set "x" for Dumpf/drückend
+		// Set "Dumpf/drückend"
 		f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), "x")
 
-		// Set "x" for Lärm-empfindl., Licht-empfindl., and Geruchs-empfindl.
+		// Set "Lärm-empfindl.", "Licht-empfindl.", "Geruchs-empfindl."
 		f.SetCellValue(sheetName, fmt.Sprintf("L%d", row), "x")
 		f.SetCellValue(sheetName, fmt.Sprintf("M%d", row), "x")
 		f.SetCellValue(sheetName, fmt.Sprintf("N%d", row), "x")

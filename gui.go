@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strconv"
 
-	l "kopfschmerzkalender/localization"
+	l "github.com/HugeFrog24/kopfschmerzkalender-generator/localization"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -21,6 +21,15 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/text/language"
 )
+
+// Helper function to create a range input container
+func createRangeField(minEntry, maxEntry *widget.Entry) *fyne.Container {
+	return container.NewHBox(
+		minEntry,
+		widget.NewLabel(" - "),
+		maxEntry,
+	)
+}
 
 // Add this function to create a language selector
 func createLanguageSelector(updateUI func()) *widget.Select {
@@ -50,6 +59,11 @@ func runGUI() {
 	maxIntensityEntry := widget.NewEntry()
 	minDaysBetweenMedicationEntry := widget.NewEntry()
 	maxDaysBetweenMedicationEntry := widget.NewEntry()
+
+	// New entries for duration hours
+	minDurationHoursEntry := widget.NewEntry()
+	maxDurationHoursEntry := widget.NewEntry()
+
 	nameEntry := widget.NewEntry()
 	nameEntry.SetPlaceHolder(l.T(l.MsgNamePlaceholder))
 	medicationAEntry := widget.NewEntry()
@@ -90,17 +104,27 @@ func runGUI() {
 			log.Println("Sample data deactivated")
 		}
 		// Toggle entry fields based on the checkbox state
-		setEntryFieldsEnabled(checked, minIntensityEntry, maxIntensityEntry, minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry, nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
+		setEntryFieldsEnabled(checked,
+			minIntensityEntry, maxIntensityEntry,
+			minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry,
+			minDurationHoursEntry, maxDurationHoursEntry, // Include new fields
+			nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
 	})
 
 	// Set default values
 	sampleDataCheck.SetChecked(true)
 	// Enable entry fields initially since sample data is checked by default
-	setEntryFieldsEnabled(true, minIntensityEntry, maxIntensityEntry, minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry, nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
+	setEntryFieldsEnabled(true,
+		minIntensityEntry, maxIntensityEntry,
+		minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry,
+		minDurationHoursEntry, maxDurationHoursEntry, // Include new fields
+		nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
 	minIntensityEntry.SetText("5")  // Pre-populate with 5
 	maxIntensityEntry.SetText("10") // Pre-populate with 10
 	minDaysBetweenMedicationEntry.SetText("5")
 	maxDaysBetweenMedicationEntry.SetText("9")
+	minDurationHoursEntry.SetText("1")  // Example default min hours
+	maxDurationHoursEntry.SetText("24") // Example default max hours
 
 	// Create a slice to hold the selected months
 	selectedMonths := make([]string, 0)
@@ -108,14 +132,18 @@ func runGUI() {
 	// Create the months selection grid
 	monthsGrid := createMonthsSelection(&selectedMonths)
 
+	// Group range fields into horizontal containers
+	intensityRange := createRangeField(minIntensityEntry, maxIntensityEntry)
+	daysBetweenMedRange := createRangeField(minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry)
+	durationHoursRange := createRangeField(minDurationHoursEntry, maxDurationHoursEntry) // New range field
+
 	// Create form
 	form := &widget.Form{
 		Items: []*widget.FormItem{
 			{Text: l.T(l.MsgSampleData), Widget: sampleDataCheck},
-			{Text: l.T(l.MsgMinIntensity), Widget: minIntensityEntry},
-			{Text: l.T(l.MsgMaxIntensity), Widget: maxIntensityEntry},
-			{Text: l.T(l.MsgMinDaysBetweenMed), Widget: minDaysBetweenMedicationEntry},
-			{Text: l.T(l.MsgMaxDaysBetweenMed), Widget: maxDaysBetweenMedicationEntry},
+			{Text: l.T(l.MsgIntensity), Widget: intensityRange},
+			{Text: l.T(l.MsgDaysBetweenMed), Widget: daysBetweenMedRange},
+			{Text: l.T(l.MsgDurationHours), Widget: durationHoursRange}, // New form item
 			{Text: l.T(l.MsgMonths), Widget: monthsGrid},
 			{Text: l.T(l.MsgName), Widget: nameEntry},
 			{Text: l.T(l.MsgMedicationA), Widget: medicationAEntry},
@@ -155,12 +183,38 @@ func runGUI() {
 			return
 		}
 
-		log.Printf(l.T("Selected months before creating config: %v\n"), selectedMonths)
+		// Validate duration hours
+		minDurationHours, minDurationErr := parseInt(minDurationHoursEntry.Text)
+		maxDurationHours, maxDurationErr := parseInt(maxDurationHoursEntry.Text)
+
+		if minDurationErr != nil || maxDurationErr != nil {
+			dialog.ShowError(fmt.Errorf(l.T(l.MsgDurationHoursError)), w)
+			return
+		}
+
+		if minDurationHours < 0 {
+			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinDurationHoursNegativeError)), w)
+			return
+		}
+
+		if maxDurationHours > 24 {
+			dialog.ShowError(fmt.Errorf(l.T(l.MsgMaxDurationHoursExceededError)), w)
+			return
+		}
+
+		if minDurationHours > maxDurationHours {
+			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinDurationHoursGreaterError)), w)
+			return
+		}
+
+		log.Printf("Selected months before creating config: %v\n", selectedMonths)
 
 		config := Config{
 			SampleData:               sampleDataCheck.Checked,
 			MinDaysBetweenMedication: minDaysBetweenMedication,
 			MaxDaysBetweenMedication: maxDaysBetweenMedication,
+			MinDurationHours:         minDurationHours, // New field
+			MaxDurationHours:         maxDurationHours, // New field
 			Months:                   make([]string, len(selectedMonths)),
 			Name:                     nameEntry.Text,
 			MedicationA:              medicationAEntry.Text,
@@ -203,26 +257,24 @@ func runGUI() {
 	updateUI := func() {
 		w.SetTitle(l.T(l.MsgAppTitle))
 		sampleDataCheck.Text = l.T(l.MsgSampleData)
-		sampleDataCheck.Refresh() // Add this line to refresh the sampleDataCheck widget
+		sampleDataCheck.Refresh() // Refresh the sampleDataCheck widget
 		// Update all other widget texts
 		form.Items[0].Text = l.T(l.MsgSampleData)
-		form.Items[1].Text = l.T(l.MsgMinIntensity)
-		form.Items[2].Text = l.T(l.MsgMaxIntensity)
-		form.Items[3].Text = l.T(l.MsgMinDaysBetweenMed)
-		form.Items[4].Text = l.T(l.MsgMaxDaysBetweenMed)
-		form.Items[5].Text = l.T(l.MsgMonths)
-		form.Items[6].Text = l.T(l.MsgName)
-		form.Items[7].Text = l.T(l.MsgMedicationA)
-		form.Items[8].Text = l.T(l.MsgMedicationB)
-		form.Items[9].Text = l.T(l.MsgMedicationC)
-		form.Items[10].Text = l.T(l.MsgOutputFilePath)
+		form.Items[1].Text = l.T(l.MsgIntensity)
+		form.Items[2].Text = l.T(l.MsgDaysBetweenMed)
+		form.Items[3].Text = l.T(l.MsgDurationHours) // Update duration hours label
+		form.Items[4].Text = l.T(l.MsgMonths)
+		form.Items[5].Text = l.T(l.MsgName)
+		form.Items[6].Text = l.T(l.MsgMedicationA)
+		form.Items[7].Text = l.T(l.MsgMedicationB)
+		form.Items[8].Text = l.T(l.MsgMedicationC)
+		form.Items[9].Text = l.T(l.MsgOutputFilePath)
 
 		nameEntry.SetPlaceHolder(l.T(l.MsgNamePlaceholder))
 		medicationAEntry.SetPlaceHolder(l.T(l.MsgMedicationAPlaceholder))
 		medicationBEntry.SetPlaceHolder(l.T(l.MsgMedicationBPlaceholder))
 		medicationCEntry.SetPlaceHolder(l.T(l.MsgMedicationCPlaceholder))
 		outputFilePathEntry.SetPlaceHolder(l.T(l.MsgOutputFilePathPlaceholder))
-
 		browseButton.SetText(l.T(l.MsgBrowse))
 		startButton.SetText(l.T(l.MsgStart))
 		exitButton.SetText(l.T(l.MsgExit))
@@ -389,14 +441,22 @@ func showAboutDialog(w fyne.Window) {
 	})
 
 	repoURL := GithubRepoURL
-	repoLink := widget.NewHyperlink(repoURL, parseURL(repoURL))
+	repoLink := widget.NewRichTextFromMarkdown(fmt.Sprintf("%s: [%s](%s)",
+		l.T(l.MsgGitHubRepository), repoURL, repoURL))
+
+	// Combine multiple lines into a single label
+	infoText := fmt.Sprintf("%s\n%s\n%s: %s\n%s",
+		l.T(l.MsgAboutTitle),
+		l.T(l.MsgAboutDescription),
+		l.T(l.MsgAuthor), "HugeFrog24",
+		l.T(l.MsgVersion, currentVersion.String()),
+	)
+	infoLabel := widget.NewLabel(infoText)
+	infoLabel.Wrapping = fyne.TextWrapWord
 
 	content := container.NewVBox(
-		widget.NewLabel(l.T(l.MsgAboutTitle)),
-		widget.NewLabel(l.T(l.MsgAboutDescription)),
-		widget.NewLabel(l.T(l.MsgAuthor, "HugeFrog24")),
-		widget.NewLabel(l.T(l.MsgVersion, currentVersion.String())),
-		container.NewHBox(widget.NewLabel("GitHub Repository: "), repoLink),
+		infoLabel,
+		repoLink,
 		checkUpdatesButton,
 	)
 

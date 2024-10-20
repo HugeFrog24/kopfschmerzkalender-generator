@@ -22,6 +22,9 @@ type Config struct {
 	OutputFilePath           string   `json:"output_file_path"`
 	MinIntensity             int      `json:"min_intensity"`
 	MaxIntensity             int      `json:"max_intensity"`
+	// New fields for duration hours
+	MinDurationHours int `json:"min_duration_hours"`
+	MaxDurationHours int `json:"max_duration_hours"`
 }
 
 // GenerateKopfschmerzkalender is declared here but implemented in kopfschmerzkalender_generator.go
