@@ -107,7 +107,7 @@ All data processing occurs locally on your device. The application needs the fol
 - **Internet:** The app may connect to the internet to check for software updates. This ensures access to the latest features and security improvements.
 - **Storage:** To save the generated Kopfschmerzkalender, the app requires permission to write Excel files to your local storage. This is necessary for creating the headache diary.
 
-Personal health data remains on your device unless you choose to share the spreadsheet explicitly.
+Personal health data remains on your device unless you share the spreadsheet explicitly.
 
 ## Final Thoughts
 
