@@ -3,3 +3,6 @@ build/*
 
 # Personal configuration
 config.json
+
+# Windows thumbnail cache
+Thumbs.db
