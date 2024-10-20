@@ -12,11 +12,11 @@ Common challenges include:
 - Documenting medication usage and effectiveness
 - Maintaining consistent record-keeping, especially during severe episodes
 
-This constant focus on pain can become a source of stress and anxiety. Ironically, it may even worsen the condition patients are trying to manage.
+This constant focus on pain can become a source of stress and anxiety. Ironically, it may even **worsen** the condition patients are trying to manage.
 
-As a chronic migraine sufferer myself, I understand these challenges firsthand. I found that meticulously filling out a Kopfschmerzkalender for medical professionals was not only mühsam (tedious) but often seemed to invite more headaches than it helped alleviate. 
+As a chronic migraine sufferer myself, I understand these challenges firsthand. I found that meticulously filling out a Kopfschmerzkalender for medical professionals was not only mühsam (tedious) but often invited more headaches than it helped alleviate. 
 
-The **Kopfschmerzkalender-Generator** aims to address these issues. By automating and simplifying the process, it provides a more peaceful, less stressful way for patients to maintain vital health information. This tool ensures that care providers still receive the data they need, without adding unnecessary strain on the patient.
+The **Kopfschmerzkalender-Generator** aims to address these issues. By automating and simplifying the process, it provides a peaceful, less stressful way for patients to maintain vital health information. This tool ensures that care providers still receive the data they need, without adding unnecessary strain on the patient.
 
 ## Features
 
@@ -89,7 +89,7 @@ To build and run the GUI version:
 
 ## Contributing
 
-Beiträge (contributions) are welcome! Please feel free to submit a Pull Request.
+Beiträge (contributions) are welcome! Feel free to submit a Pull Request.
 
 ## License
 
