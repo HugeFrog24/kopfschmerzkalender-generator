@@ -30,7 +30,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libx11-dev pkg-config
+          sudo apt-get install -y libgl1-mesa-dev xorg-dev pkg-config
 
       - name: Cache golangci-lint cache
         uses: actions/cache@v4

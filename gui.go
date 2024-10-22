@@ -319,7 +319,7 @@ func saveConfig(config Config) {
 		return
 	}
 
-	err = os.WriteFile("config.json", data, 0644)
+	err = os.WriteFile("config.json", data, 0600)
 	if err != nil {
 		fmt.Println("Error writing config file:", err)
 		return

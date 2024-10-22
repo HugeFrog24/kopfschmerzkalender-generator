@@ -121,7 +121,9 @@ func DownloadAndInstallUpdate(url string, progressCallback func(float64), cancel
 		log.Printf("Error renaming new executable: %v", err)
 		// If renaming fails, try to restore the old executable
 		log.Println("Attempting to restore old executable")
-		os.Rename(oldPath, execPath)
+		if restoreErr := os.Rename(oldPath, execPath); restoreErr != nil {
+			log.Printf("Error restoring old executable: %v", restoreErr)
+		}
 		return err
 	}
 
