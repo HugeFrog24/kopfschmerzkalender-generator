@@ -406,7 +406,7 @@ func readConfig(filename string) (Config, error) {
 	var config Config
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return config, err
+		return config, fmt.Errorf("error reading config file: %w", err)
 	}
 	err = json.Unmarshal(data, &config)
 	return config, err

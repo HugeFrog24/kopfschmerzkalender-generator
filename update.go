@@ -140,7 +140,7 @@ func downloadFile(url, filepath string, progressCallback func(float64), cancelCh
 	go func() {
 		resp, err := http.Get(url)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("error fetching file: %w", err)
 			return
 		}
 		respChan <- resp
@@ -160,8 +160,7 @@ func downloadFile(url, filepath string, progressCallback func(float64), cancelCh
 
 	out, err := os.Create(filepath)
 	if err != nil {
-		log.Printf("Error creating file: %v", err)
-		return err
+		return fmt.Errorf("error creating file: %w", err)
 	}
 	defer out.Close()
 
