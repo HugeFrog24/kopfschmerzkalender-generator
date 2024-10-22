@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -160,12 +160,12 @@ func runGUI() {
 		maxIntensity, maxErr := validateIntensity(maxIntensityEntry.Text)
 
 		if minErr != nil || maxErr != nil {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgIntensityError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgIntensityError)), w)
 			return
 		}
 
 		if minIntensity > maxIntensity {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinIntensityError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgMinIntensityError)), w)
 			return
 		}
 
@@ -174,12 +174,12 @@ func runGUI() {
 		maxDaysBetweenMedication, maxDaysErr := parseInt(maxDaysBetweenMedicationEntry.Text)
 
 		if minDaysErr != nil || maxDaysErr != nil {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgDaysBetweenMedError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgDaysBetweenMedError)), w)
 			return
 		}
 
 		if minDaysBetweenMedication > maxDaysBetweenMedication {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinDaysBetweenMedError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgMinDaysBetweenMedError)), w)
 			return
 		}
 
@@ -188,22 +188,22 @@ func runGUI() {
 		maxDurationHours, maxDurationErr := parseInt(maxDurationHoursEntry.Text)
 
 		if minDurationErr != nil || maxDurationErr != nil {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgDurationHoursError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgDurationHoursError)), w)
 			return
 		}
 
 		if minDurationHours < 0 {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinDurationHoursNegativeError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgMinDurationHoursNegativeError)), w)
 			return
 		}
 
 		if maxDurationHours > 24 {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgMaxDurationHoursExceededError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgMaxDurationHoursExceededError)), w)
 			return
 		}
 
 		if minDurationHours > maxDurationHours {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinDurationHoursGreaterError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgMinDurationHoursGreaterError)), w)
 			return
 		}
 
@@ -372,7 +372,7 @@ func setEntryFieldsEnabled(enabled bool, entries ...*widget.Entry) {
 func validateIntensity(s string) (int, error) {
 	i, err := strconv.Atoi(s)
 	if err != nil || i < 0 || i > 10 {
-		return 0, fmt.Errorf(l.T(l.MsgIntensityError))
+		return 0, errors.New(l.T(l.MsgIntensityError))
 	}
 	return i, nil
 }
@@ -461,15 +461,6 @@ func showAboutDialog(w fyne.Window) {
 	)
 
 	dialog.ShowCustom(l.T(l.MsgAbout), l.T(l.MsgClose), content, w)
-}
-
-// Helper function to parse URL
-func parseURL(urlStr string) *url.URL {
-	link, err := url.Parse(urlStr)
-	if err != nil {
-		log.Printf("Error parsing URL: %v", err)
-	}
-	return link
 }
 
 func checkForUpdates(w fyne.Window) {

@@ -44,8 +44,8 @@ func GenerateKopfschmerzkalender(config Config) (string, error) {
 
 	fmt.Printf("Generating sheets for months: %v\n", config.Months)
 
-	// Check if config.Months is nil or empty
-	if config.Months == nil || len(config.Months) == 0 {
+	// Remove the unnecessary nil check
+	if len(config.Months) == 0 {
 		createSheet(f, "Kopfschmerzkalender", "", config)
 	} else {
 		for _, month := range config.Months {
