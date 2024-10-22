@@ -31,11 +31,11 @@ The **Kopfschmerzkalender-Generator** aims to address these issues. By automatin
 Here are some screenshots of the Kopfschmerzkalender-Generator in action:
 
 ### Main Interface
-![Main GUI](assets/screenshots/main_window.png)
+![Main GUI](assets/screenshots/main_window.png)  
 *The main graphical user interface of the Kopfschmerzkalender-Generator.*
 
 ### Output Calendar
-![Generated Calendar](assets/screenshots/excel_spreadsheet.png)
+![Generated Calendar](assets/screenshots/excel_spreadsheet.png)  
 *An example of a generated Kopfschmerzkalender.*
 
 ## Installation
