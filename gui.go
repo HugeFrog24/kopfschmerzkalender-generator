@@ -555,7 +555,10 @@ func checkForUpdates(w fyne.Window) {
 									log.Println("Restarting application...")
 									executable, _ := os.Executable()
 									cmd := exec.Command(executable)
-									cmd.Start()
+									if err := cmd.Start(); err != nil {
+										log.Printf("Error restarting application: %v", err)
+										return
+									}
 									os.Exit(0)
 								} else {
 									log.Println("Restart postponed")
