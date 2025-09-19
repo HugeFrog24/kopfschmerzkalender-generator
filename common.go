@@ -38,12 +38,14 @@ func GenerateKopfschmerzkalender(config Config) (string, error) {
 	}()
 
 	// Remove the default Sheet1
-	f.DeleteSheet("Sheet1")
+	if err := f.DeleteSheet("Sheet1"); err != nil {
+		fmt.Printf("Warning: Failed to delete default Sheet1: %v\n", err)
+	}
 
 	fmt.Printf("Generating sheets for months: %v\n", config.Months)
 
-	// Check if config.Months is nil or empty
-	if config.Months == nil || len(config.Months) == 0 {
+	// Remove the unnecessary nil check
+	if len(config.Months) == 0 {
 		createSheet(f, "Kopfschmerzkalender", "", config)
 	} else {
 		for _, month := range config.Months {
