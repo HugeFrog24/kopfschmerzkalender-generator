@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	CurrentVersion     = semver.MustParse("1.0.1")
+	CurrentVersion     = semver.MustParse("1.0.3")
 	ErrUpdateCancelled = errors.New("update cancelled by user")
 )
 
@@ -52,7 +52,11 @@ func CheckForUpdates(cancelChan <-chan struct{}) (semver.Version, string, error)
 		log.Printf("Error fetching latest release: %v", err)
 		return semver.Version{}, "", err
 	case resp := <-respChan:
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("Error closing response body: %v", err)
+			}
+		}()
 
 		log.Println("Successfully fetched latest release information")
 		body, err := io.ReadAll(resp.Body)
@@ -121,7 +125,9 @@ func DownloadAndInstallUpdate(url string, progressCallback func(float64), cancel
 		log.Printf("Error renaming new executable: %v", err)
 		// If renaming fails, try to restore the old executable
 		log.Println("Attempting to restore old executable")
-		os.Rename(oldPath, execPath)
+		if restoreErr := os.Rename(oldPath, execPath); restoreErr != nil {
+			log.Printf("Error restoring old executable: %v", restoreErr)
+		}
 		return err
 	}
 
@@ -136,9 +142,10 @@ func downloadFile(url, filepath string, progressCallback func(float64), cancelCh
 	errChan := make(chan error)
 
 	go func() {
+		// #nosec G107 -- url is the release asset URL returned by this repo's GitHub API; desktop app, so there is no SSRF trust boundary to cross
 		resp, err := http.Get(url)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("error fetching file: %w", err)
 			return
 		}
 		respChan <- resp
@@ -154,14 +161,22 @@ func downloadFile(url, filepath string, progressCallback func(float64), cancelCh
 	case resp = <-respChan:
 		// Continue with the download
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Error closing response body: %v", err)
+		}
+	}()
 
+	// #nosec G304 -- filepath is derived from os.Executable() ("<exe>.new"), not from external input
 	out, err := os.Create(filepath)
 	if err != nil {
-		log.Printf("Error creating file: %v", err)
-		return err
+		return fmt.Errorf("error creating file: %w", err)
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			log.Printf("Error closing file: %v", err)
+		}
+	}()
 
 	counter := &WriteCounter{
 		Total:             resp.ContentLength,

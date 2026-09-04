@@ -15,10 +15,12 @@ var (
 )
 
 func init() {
+	// Set the log flags before anything logs: this package's own SetLanguage call
+	// below is the first log line the program emits, and without this it would be
+	// the only one missing the file:line prefix.
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	// Initialize with default language (e.g., English)
 	SetLanguage(language.English)
-	// Set log flags to include filename and line number
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
 func SetLanguage(lang language.Tag) {

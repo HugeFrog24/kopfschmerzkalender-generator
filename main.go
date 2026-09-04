@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 )
 
@@ -10,16 +10,16 @@ func main() {
 		// Read config from file and generate Kopfschmerzkalender
 		config, err := readConfig("config.json")
 		if err != nil {
-			fmt.Printf("Error reading config: %v\n", err)
+			log.Printf("Error reading config: %v", err)
 			return
 		}
-		fmt.Printf("Read config: %+v\n", config)
+		log.Printf("Read config: %+v", config)
 		filePath, err := GenerateKopfschmerzkalender(config)
 		if err != nil {
-			fmt.Printf("Error generating Kopfschmerzkalender: %v\n", err)
+			log.Printf("Error generating Kopfschmerzkalender: %v", err)
 			return
 		}
-		fmt.Printf("Kopfschmerzkalender generated successfully: %s\n", filePath)
+		log.Printf("Kopfschmerzkalender generated successfully: %s", filePath)
 	} else {
 		// Run GUI
 		runGUI()

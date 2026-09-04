@@ -2,15 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
 
-	l "kopfschmerzkalender/localization"
+	l "github.com/HugeFrog24/kopfschmerzkalender-generator/localization"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -21,6 +21,15 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"golang.org/x/text/language"
 )
+
+// Helper function to create a range input container
+func createRangeField(minEntry, maxEntry *widget.Entry) *fyne.Container {
+	return container.NewHBox(
+		minEntry,
+		widget.NewLabel(" - "),
+		maxEntry,
+	)
+}
 
 // Add this function to create a language selector
 func createLanguageSelector(updateUI func()) *widget.Select {
@@ -50,6 +59,11 @@ func runGUI() {
 	maxIntensityEntry := widget.NewEntry()
 	minDaysBetweenMedicationEntry := widget.NewEntry()
 	maxDaysBetweenMedicationEntry := widget.NewEntry()
+
+	// New entries for duration hours
+	minDurationHoursEntry := widget.NewEntry()
+	maxDurationHoursEntry := widget.NewEntry()
+
 	nameEntry := widget.NewEntry()
 	nameEntry.SetPlaceHolder(l.T(l.MsgNamePlaceholder))
 	medicationAEntry := widget.NewEntry()
@@ -71,7 +85,11 @@ func runGUI() {
 			if writer == nil {
 				return
 			}
-			defer writer.Close()
+			defer func() {
+				if err := writer.Close(); err != nil {
+					log.Printf("Error closing writer: %v", err)
+				}
+			}()
 			outputFilePathEntry.SetText(writer.URI().Path())
 		}, w)
 		fd.SetFileName("Kopfschmerzkalender.xlsx")
@@ -90,17 +108,27 @@ func runGUI() {
 			log.Println("Sample data deactivated")
 		}
 		// Toggle entry fields based on the checkbox state
-		setEntryFieldsEnabled(checked, minIntensityEntry, maxIntensityEntry, minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry, nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
+		setEntryFieldsEnabled(checked,
+			minIntensityEntry, maxIntensityEntry,
+			minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry,
+			minDurationHoursEntry, maxDurationHoursEntry, // Include new fields
+			nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
 	})
 
 	// Set default values
 	sampleDataCheck.SetChecked(true)
 	// Enable entry fields initially since sample data is checked by default
-	setEntryFieldsEnabled(true, minIntensityEntry, maxIntensityEntry, minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry, nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
+	setEntryFieldsEnabled(true,
+		minIntensityEntry, maxIntensityEntry,
+		minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry,
+		minDurationHoursEntry, maxDurationHoursEntry, // Include new fields
+		nameEntry, medicationAEntry, medicationBEntry, medicationCEntry)
 	minIntensityEntry.SetText("5")  // Pre-populate with 5
 	maxIntensityEntry.SetText("10") // Pre-populate with 10
 	minDaysBetweenMedicationEntry.SetText("5")
 	maxDaysBetweenMedicationEntry.SetText("9")
+	minDurationHoursEntry.SetText("1")  // Example default min hours
+	maxDurationHoursEntry.SetText("24") // Example default max hours
 
 	// Create a slice to hold the selected months
 	selectedMonths := make([]string, 0)
@@ -108,14 +136,18 @@ func runGUI() {
 	// Create the months selection grid
 	monthsGrid := createMonthsSelection(&selectedMonths)
 
+	// Group range fields into horizontal containers
+	intensityRange := createRangeField(minIntensityEntry, maxIntensityEntry)
+	daysBetweenMedRange := createRangeField(minDaysBetweenMedicationEntry, maxDaysBetweenMedicationEntry)
+	durationHoursRange := createRangeField(minDurationHoursEntry, maxDurationHoursEntry) // New range field
+
 	// Create form
 	form := &widget.Form{
 		Items: []*widget.FormItem{
 			{Text: l.T(l.MsgSampleData), Widget: sampleDataCheck},
-			{Text: l.T(l.MsgMinIntensity), Widget: minIntensityEntry},
-			{Text: l.T(l.MsgMaxIntensity), Widget: maxIntensityEntry},
-			{Text: l.T(l.MsgMinDaysBetweenMed), Widget: minDaysBetweenMedicationEntry},
-			{Text: l.T(l.MsgMaxDaysBetweenMed), Widget: maxDaysBetweenMedicationEntry},
+			{Text: l.T(l.MsgIntensity), Widget: intensityRange},
+			{Text: l.T(l.MsgDaysBetweenMed), Widget: daysBetweenMedRange},
+			{Text: l.T(l.MsgDurationHours), Widget: durationHoursRange}, // New form item
 			{Text: l.T(l.MsgMonths), Widget: monthsGrid},
 			{Text: l.T(l.MsgName), Widget: nameEntry},
 			{Text: l.T(l.MsgMedicationA), Widget: medicationAEntry},
@@ -132,12 +164,12 @@ func runGUI() {
 		maxIntensity, maxErr := validateIntensity(maxIntensityEntry.Text)
 
 		if minErr != nil || maxErr != nil {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgIntensityError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgIntensityError)), w)
 			return
 		}
 
 		if minIntensity > maxIntensity {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinIntensityError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgMinIntensityError)), w)
 			return
 		}
 
@@ -146,21 +178,47 @@ func runGUI() {
 		maxDaysBetweenMedication, maxDaysErr := parseInt(maxDaysBetweenMedicationEntry.Text)
 
 		if minDaysErr != nil || maxDaysErr != nil {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgDaysBetweenMedError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgDaysBetweenMedError)), w)
 			return
 		}
 
 		if minDaysBetweenMedication > maxDaysBetweenMedication {
-			dialog.ShowError(fmt.Errorf(l.T(l.MsgMinDaysBetweenMedError)), w)
+			dialog.ShowError(errors.New(l.T(l.MsgMinDaysBetweenMedError)), w)
 			return
 		}
 
-		log.Printf(l.T("Selected months before creating config: %v\n"), selectedMonths)
+		// Validate duration hours
+		minDurationHours, minDurationErr := parseInt(minDurationHoursEntry.Text)
+		maxDurationHours, maxDurationErr := parseInt(maxDurationHoursEntry.Text)
+
+		if minDurationErr != nil || maxDurationErr != nil {
+			dialog.ShowError(errors.New(l.T(l.MsgDurationHoursError)), w)
+			return
+		}
+
+		if minDurationHours < 0 {
+			dialog.ShowError(errors.New(l.T(l.MsgMinDurationHoursNegativeError)), w)
+			return
+		}
+
+		if maxDurationHours > 24 {
+			dialog.ShowError(errors.New(l.T(l.MsgMaxDurationHoursExceededError)), w)
+			return
+		}
+
+		if minDurationHours > maxDurationHours {
+			dialog.ShowError(errors.New(l.T(l.MsgMinDurationHoursGreaterError)), w)
+			return
+		}
+
+		log.Printf("Selected months before creating config: %v", selectedMonths)
 
 		config := Config{
 			SampleData:               sampleDataCheck.Checked,
 			MinDaysBetweenMedication: minDaysBetweenMedication,
 			MaxDaysBetweenMedication: maxDaysBetweenMedication,
+			MinDurationHours:         minDurationHours, // New field
+			MaxDurationHours:         maxDurationHours, // New field
 			Months:                   make([]string, len(selectedMonths)),
 			Name:                     nameEntry.Text,
 			MedicationA:              medicationAEntry.Text,
@@ -172,7 +230,7 @@ func runGUI() {
 		}
 		copy(config.Months, selectedMonths)
 
-		log.Printf("Config months after creation: %v\n", config.Months)
+		log.Printf("Config months after creation: %v", config.Months)
 
 		// Save config to file
 		saveConfig(config)
@@ -203,26 +261,24 @@ func runGUI() {
 	updateUI := func() {
 		w.SetTitle(l.T(l.MsgAppTitle))
 		sampleDataCheck.Text = l.T(l.MsgSampleData)
-		sampleDataCheck.Refresh() // Add this line to refresh the sampleDataCheck widget
+		sampleDataCheck.Refresh() // Refresh the sampleDataCheck widget
 		// Update all other widget texts
 		form.Items[0].Text = l.T(l.MsgSampleData)
-		form.Items[1].Text = l.T(l.MsgMinIntensity)
-		form.Items[2].Text = l.T(l.MsgMaxIntensity)
-		form.Items[3].Text = l.T(l.MsgMinDaysBetweenMed)
-		form.Items[4].Text = l.T(l.MsgMaxDaysBetweenMed)
-		form.Items[5].Text = l.T(l.MsgMonths)
-		form.Items[6].Text = l.T(l.MsgName)
-		form.Items[7].Text = l.T(l.MsgMedicationA)
-		form.Items[8].Text = l.T(l.MsgMedicationB)
-		form.Items[9].Text = l.T(l.MsgMedicationC)
-		form.Items[10].Text = l.T(l.MsgOutputFilePath)
+		form.Items[1].Text = l.T(l.MsgIntensity)
+		form.Items[2].Text = l.T(l.MsgDaysBetweenMed)
+		form.Items[3].Text = l.T(l.MsgDurationHours) // Update duration hours label
+		form.Items[4].Text = l.T(l.MsgMonths)
+		form.Items[5].Text = l.T(l.MsgName)
+		form.Items[6].Text = l.T(l.MsgMedicationA)
+		form.Items[7].Text = l.T(l.MsgMedicationB)
+		form.Items[8].Text = l.T(l.MsgMedicationC)
+		form.Items[9].Text = l.T(l.MsgOutputFilePath)
 
 		nameEntry.SetPlaceHolder(l.T(l.MsgNamePlaceholder))
 		medicationAEntry.SetPlaceHolder(l.T(l.MsgMedicationAPlaceholder))
 		medicationBEntry.SetPlaceHolder(l.T(l.MsgMedicationBPlaceholder))
 		medicationCEntry.SetPlaceHolder(l.T(l.MsgMedicationCPlaceholder))
 		outputFilePathEntry.SetPlaceHolder(l.T(l.MsgOutputFilePathPlaceholder))
-
 		browseButton.SetText(l.T(l.MsgBrowse))
 		startButton.SetText(l.T(l.MsgStart))
 		exitButton.SetText(l.T(l.MsgExit))
@@ -263,17 +319,17 @@ func parseInt(s string) (int, error) {
 func saveConfig(config Config) {
 	data, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
-		fmt.Println("Error marshalling JSON:", err)
+		log.Println("Error marshalling JSON:", err)
 		return
 	}
 
-	err = os.WriteFile("config.json", data, 0644)
+	err = os.WriteFile("config.json", data, 0600)
 	if err != nil {
-		fmt.Println("Error writing config file:", err)
+		log.Println("Error writing config file:", err)
 		return
 	}
 
-	fmt.Printf("Config saved successfully. Selected months: %v\n", config.Months)
+	log.Printf("Config saved successfully. Selected months: %v", config.Months)
 }
 
 func showSuccessDialog(w fyne.Window, filePath string) {
@@ -292,6 +348,7 @@ func showSuccessDialog(w fyne.Window, filePath string) {
 
 func openFile(path string) {
 	var cmd *exec.Cmd
+	// #nosec G204 -- path is the .xlsx this app just generated, from the local user's own config; no privilege boundary between config author and process
 	switch runtime.GOOS {
 	case "windows":
 		cmd = exec.Command("cmd", "/c", "start", "", path)
@@ -302,7 +359,7 @@ func openFile(path string) {
 	}
 	err := cmd.Start()
 	if err != nil {
-		fmt.Printf(l.T(l.MsgErrorOpeningFile), err)
+		log.Printf(l.T(l.MsgErrorOpeningFile), err)
 	}
 }
 
@@ -320,7 +377,7 @@ func setEntryFieldsEnabled(enabled bool, entries ...*widget.Entry) {
 func validateIntensity(s string) (int, error) {
 	i, err := strconv.Atoi(s)
 	if err != nil || i < 0 || i > 10 {
-		return 0, fmt.Errorf(l.T(l.MsgIntensityError))
+		return 0, errors.New(l.T(l.MsgIntensityError))
 	}
 	return i, nil
 }
@@ -334,7 +391,7 @@ func createMonthsSelection(selectedMonths *[]string) *fyne.Container {
 
 	checkGroup := widget.NewCheckGroup(months, func(selected []string) {
 		*selectedMonths = selected
-		log.Printf("Updated selected months: %v\n", *selectedMonths)
+		log.Printf("Updated selected months: %v", *selectedMonths)
 	})
 
 	grid := container.New(layout.NewGridLayout(3))
@@ -389,27 +446,26 @@ func showAboutDialog(w fyne.Window) {
 	})
 
 	repoURL := GithubRepoURL
-	repoLink := widget.NewHyperlink(repoURL, parseURL(repoURL))
+	repoLink := widget.NewRichTextFromMarkdown(fmt.Sprintf("%s: [%s](%s)",
+		l.T(l.MsgGitHubRepository), repoURL, repoURL))
+
+	// Combine multiple lines into a single label
+	infoText := fmt.Sprintf("%s\n%s\n%s: %s\n%s",
+		l.T(l.MsgAboutTitle),
+		l.T(l.MsgAboutDescription),
+		l.T(l.MsgAuthor), "HugeFrog24",
+		l.T(l.MsgVersion, currentVersion.String()),
+	)
+	infoLabel := widget.NewLabel(infoText)
+	infoLabel.Wrapping = fyne.TextWrapWord
 
 	content := container.NewVBox(
-		widget.NewLabel(l.T(l.MsgAboutTitle)),
-		widget.NewLabel(l.T(l.MsgAboutDescription)),
-		widget.NewLabel(l.T(l.MsgAuthor, "HugeFrog24")),
-		widget.NewLabel(l.T(l.MsgVersion, currentVersion.String())),
-		container.NewHBox(widget.NewLabel("GitHub Repository: "), repoLink),
+		infoLabel,
+		repoLink,
 		checkUpdatesButton,
 	)
 
 	dialog.ShowCustom(l.T(l.MsgAbout), l.T(l.MsgClose), content, w)
-}
-
-// Helper function to parse URL
-func parseURL(urlStr string) *url.URL {
-	link, err := url.Parse(urlStr)
-	if err != nil {
-		log.Printf("Error parsing URL: %v", err)
-	}
-	return link
 }
 
 func checkForUpdates(w fyne.Window) {
@@ -438,12 +494,15 @@ func checkForUpdates(w fyne.Window) {
 		progressDialog.Hide()
 	}
 
-	// Use a goroutine to perform the update check
+	// Use a goroutine to perform the update check. Fyne widgets may only be touched
+	// from the main thread, so every UI call below goes through fyne.Do.
 	go func() {
 		latestVersion, downloadURL, err := CheckForUpdates(cancelChan)
 
 		// Hide the progress dialog when done
-		progressDialog.Hide()
+		fyne.Do(func() {
+			progressDialog.Hide()
+		})
 
 		if err != nil {
 			if err == ErrUpdateCancelled {
@@ -451,100 +510,131 @@ func checkForUpdates(w fyne.Window) {
 				return
 			}
 			log.Printf("Error checking for updates: %v", err)
-			dialog.ShowError(err, w)
+			fyne.Do(func() {
+				dialog.ShowError(err, w)
+			})
 			return
 		}
 
 		currentVersion := GetCurrentVersion()
-		log.Printf("Current version: %s, Latest version: %s", currentVersion, latestVersion)
+		log.Printf("Current version: %s, latest version: %s", currentVersion, latestVersion)
 
 		if latestVersion.GT(currentVersion) {
 			log.Println("Update available")
-			content := widget.NewLabel(l.T(l.MsgUpdateAvailable, latestVersion.String()))
-			downloadButton := widget.NewButton(l.T(l.MsgDownload), func() {
-				log.Println("Starting update download")
-				progressBar := widget.NewProgressBar()
-				cancelButton := widget.NewButton(l.T(l.MsgCancel), nil)
-				content := container.NewVBox(
-					widget.NewLabel(l.T(l.MsgPleaseWait)), // Change to "Please wait"
-					progressBar,
-					cancelButton,
-				)
-				progressDialog := dialog.NewCustomWithoutButtons(l.T(l.MsgDownloadingUpdate), content, w)
-				progressDialog.Show()
-
-				// Create a new channel for download cancellation
-				downloadCancelChan := make(chan struct{})
-
-				cancelButton.OnTapped = func() {
-					close(downloadCancelChan)
-					progressDialog.Hide()
-				}
-
-				go func() {
-					err := DownloadAndInstallUpdate(downloadURL, func(progress float64) {
-						log.Printf("Download progress: %.2f%%", progress*100)
-						progressBar.SetValue(progress)
-					}, downloadCancelChan)
-					progressDialog.Hide()
-					if err != nil {
-						if err == ErrUpdateCancelled {
-							log.Println("Update download cancelled by user")
-							return
-						}
-						log.Printf("Error during update: %v", err)
-						dialog.ShowError(err, w)
-					} else {
-						log.Println("Update completed successfully")
-						restartDialog := dialog.NewConfirm(
-							l.T(l.MsgUpdateSuccess),
-							l.T(l.MsgRestartRequired),
-							func(restart bool) {
-								if restart {
-									log.Println("Restarting application...")
-									executable, _ := os.Executable()
-									cmd := exec.Command(executable)
-									cmd.Start()
-									os.Exit(0)
-								} else {
-									log.Println("Restart postponed")
-								}
-							},
-							w,
-						)
-						restartDialog.SetDismissText(l.T(l.MsgLater))
-						restartDialog.SetConfirmText(l.T(l.MsgRestartNow))
-						restartDialog.Show()
-					}
-				}()
+			fyne.Do(func() {
+				showUpdateAvailableDialog(w, latestVersion.String(), downloadURL)
 			})
-			// Add a cancel button
-			cancelButton := widget.NewButton(l.T(l.MsgCancel), nil)
-
-			buttonsContainer := container.NewHBox(downloadButton, cancelButton)
-
-			updateDialog := dialog.NewCustomWithoutButtons(
-				l.T(l.MsgUpdateAvailable, latestVersion.String()),
-				container.NewVBox(content, buttonsContainer),
-				w,
-			)
-
-			// Set the cancel button's OnTapped function to close the dialog
-			cancelButton.OnTapped = func() {
-				updateDialog.Hide()
-			}
-
-			updateDialog.Show()
 		} else {
 			log.Println("No updates available")
-			dialog.ShowInformation(l.T(l.MsgNoUpdates), l.T(l.MsgLatestVersion), w)
+			fyne.Do(func() {
+				dialog.ShowInformation(l.T(l.MsgNoUpdates), l.T(l.MsgLatestVersion), w)
+			})
 		}
 	}()
+}
+
+// showUpdateAvailableDialog offers the available update and, if accepted, downloads
+// and installs it. Must be called on the main thread.
+func showUpdateAvailableDialog(w fyne.Window, latestVersion, downloadURL string) {
+	content := widget.NewLabel(l.T(l.MsgUpdateAvailable, latestVersion))
+	downloadButton := widget.NewButton(l.T(l.MsgDownload), func() {
+		log.Println("Starting update download")
+		progressBar := widget.NewProgressBar()
+		cancelButton := widget.NewButton(l.T(l.MsgCancel), nil)
+		content := container.NewVBox(
+			widget.NewLabel(l.T(l.MsgPleaseWait)), // Change to "Please wait"
+			progressBar,
+			cancelButton,
+		)
+		progressDialog := dialog.NewCustomWithoutButtons(l.T(l.MsgDownloadingUpdate), content, w)
+		progressDialog.Show()
+
+		// Create a new channel for download cancellation
+		downloadCancelChan := make(chan struct{})
+
+		cancelButton.OnTapped = func() {
+			close(downloadCancelChan)
+			progressDialog.Hide()
+		}
+
+		go func() {
+			err := DownloadAndInstallUpdate(downloadURL, func(progress float64) {
+				log.Printf("Download progress: %.2f%%", progress*100)
+				fyne.Do(func() {
+					progressBar.SetValue(progress)
+				})
+			}, downloadCancelChan)
+
+			fyne.Do(func() {
+				progressDialog.Hide()
+			})
+
+			if err != nil {
+				if err == ErrUpdateCancelled {
+					log.Println("Update download cancelled by user")
+					return
+				}
+				log.Printf("Error during update: %v", err)
+				fyne.Do(func() {
+					dialog.ShowError(err, w)
+				})
+				return
+			}
+
+			log.Println("Update completed successfully")
+			fyne.Do(func() {
+				showRestartDialog(w)
+			})
+		}()
+	})
+	// Add a cancel button
+	cancelButton := widget.NewButton(l.T(l.MsgCancel), nil)
+
+	buttonsContainer := container.NewHBox(downloadButton, cancelButton)
+
+	updateDialog := dialog.NewCustomWithoutButtons(
+		l.T(l.MsgUpdateAvailable, latestVersion),
+		container.NewVBox(content, buttonsContainer),
+		w,
+	)
+
+	// Set the cancel button's OnTapped function to close the dialog
+	cancelButton.OnTapped = func() {
+		updateDialog.Hide()
+	}
+
+	updateDialog.Show()
+}
+
+// showRestartDialog asks whether to restart into the freshly installed version.
+// Must be called on the main thread.
+func showRestartDialog(w fyne.Window) {
+	restartDialog := dialog.NewConfirm(
+		l.T(l.MsgUpdateSuccess),
+		l.T(l.MsgRestartRequired),
+		func(restart bool) {
+			if restart {
+				log.Println("Restarting application...")
+				executable, _ := os.Executable()
+				// #nosec G204 -- relaunching this program itself; executable is os.Executable(), not external input
+				cmd := exec.Command(executable)
+				if err := cmd.Start(); err != nil {
+					log.Printf("Error restarting application: %v", err)
+					return
+				}
+				os.Exit(0)
+			} else {
+				log.Println("Restart postponed")
+			}
+		},
+		w,
+	)
+	restartDialog.SetDismissText(l.T(l.MsgLater))
+	restartDialog.SetConfirmText(l.T(l.MsgRestartNow))
+	restartDialog.Show()
 }
 
 func init() {
 	// Set the initial language (e.g., German)
 	l.SetLanguage(language.German)
-	// Set log flags to include filename and line number
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }

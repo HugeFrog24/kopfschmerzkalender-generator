@@ -1,2 +1,12 @@
+# Vendor directory
+vendor/
+
+# Build artifacts
 build/*
 !build/.gitkeep
+
+# Personal configuration
+config.json
+
+# Windows thumbnail cache
+Thumbs.db

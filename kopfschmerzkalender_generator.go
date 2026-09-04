@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"strings"
@@ -12,87 +13,163 @@ import (
 )
 
 func createSheet(f *excelize.File, sheetName, month string, config Config) {
-	fmt.Printf("Creating sheet: %s, month: %s\n", sheetName, month)
+	log.Printf("Creating sheet: %s, month: %s", sheetName, month)
 	index, err := f.NewSheet(sheetName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	f.SetActiveSheet(index)
 
 	// Set column widths
-	f.SetColWidth(sheetName, "A", "A", 5)
-	f.SetColWidth(sheetName, "B", "K", 8)
-	f.SetColWidth(sheetName, "L", "U", 6)
-	f.SetColWidth(sheetName, "V", "X", 8)
+	if err := f.SetColWidth(sheetName, "A", "A", 5); err != nil {
+		log.Printf("Error setting column width: %v", err)
+	}
+	if err := f.SetColWidth(sheetName, "B", "K", 8); err != nil {
+		log.Printf("Error setting column width: %v", err)
+	}
+	if err := f.SetColWidth(sheetName, "L", "U", 6); err != nil {
+		log.Printf("Error setting column width: %v", err)
+	}
+	if err := f.SetColWidth(sheetName, "V", "X", 8); err != nil {
+		log.Printf("Error setting column width: %v", err)
+	}
 
 	// Add title and logo
-	f.SetCellValue(sheetName, "A1", "Kopfschmerzkalender")
-	f.MergeCell(sheetName, "A1", "U1")
+	if err := f.SetCellValue(sheetName, "A1", "Kopfschmerzkalender"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "A1", "U1"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
 	titleStyle, _ := f.NewStyle(&excelize.Style{
 		Font:      &excelize.Font{Bold: true, Size: 20, Italic: true},
 		Alignment: &excelize.Alignment{Horizontal: "left", Vertical: "center"},
 	})
-	f.SetCellStyle(sheetName, "A1", "U1", titleStyle)
+	if err := f.SetCellStyle(sheetName, "A1", "U1", titleStyle); err != nil {
+		log.Printf("Error setting cell style: %v", err)
+	}
 
-	f.SetCellValue(sheetName, "V1", "DMKG")
-	f.MergeCell(sheetName, "V1", "X2")
+	if err := f.SetCellValue(sheetName, "V1", "DMKG"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "V1", "X2"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
 	logoStyle, _ := f.NewStyle(&excelize.Style{
 		Font:      &excelize.Font{Bold: true, Size: 16, Color: "FF0000"},
 		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
 	})
-	f.SetCellStyle(sheetName, "V1", "X2", logoStyle)
+	if err := f.SetCellStyle(sheetName, "V1", "X2", logoStyle); err != nil {
+		log.Printf("Error setting cell style: %v", err)
+	}
 
-	f.SetCellValue(sheetName, "V3", "Deutsche Migräne- und")
-	f.SetCellValue(sheetName, "V4", "Kopfschmerzgesellschaft")
-	f.SetCellValue(sheetName, "V5", "www.dmkg.de")
-	f.MergeCell(sheetName, "V3", "X3")
-	f.MergeCell(sheetName, "V4", "X4")
-	f.MergeCell(sheetName, "V5", "X5")
+	if err := f.SetCellValue(sheetName, "V3", "Deutsche Migräne- und"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "V4", "Kopfschmerzgesellschaft"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "V5", "www.dmkg.de"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "V3", "X3"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "V4", "X4"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "V5", "X5"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
 
 	// Add medication, name, and month fields
-	f.SetCellValue(sheetName, "A3", "Bitte vermerken Sie Ihre Medikamente,")
-	f.SetCellValue(sheetName, "A4", "die Sie bei Kopfschmerzen einnehmen:")
-	f.MergeCell(sheetName, "A3", "K3")
-	f.MergeCell(sheetName, "A4", "K4")
-	f.SetCellValue(sheetName, "A5", "A:")
-	f.SetCellValue(sheetName, "A6", "B:")
-	f.SetCellValue(sheetName, "A7", "C:")
-	f.MergeCell(sheetName, "B5", "K5")
-	f.MergeCell(sheetName, "B6", "K6")
-	f.MergeCell(sheetName, "B7", "K7")
+	if err := f.SetCellValue(sheetName, "A3", "Bitte vermerken Sie Ihre Medikamente,"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A4", "die Sie bei Kopfschmerzen einnehmen:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "A3", "K3"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "A4", "K4"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A5", "A:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A6", "B:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A7", "C:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "B5", "K5"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "B6", "K6"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "B7", "K7"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
 
 	// Set medication names from config
-	f.SetCellValue(sheetName, "B5", config.MedicationA)
-	f.SetCellValue(sheetName, "B6", config.MedicationB)
-	f.SetCellValue(sheetName, "B7", config.MedicationC)
+	if err := f.SetCellValue(sheetName, "B5", config.MedicationA); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "B6", config.MedicationB); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "B7", config.MedicationC); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
 
-	f.SetCellValue(sheetName, "L3", "Name")
-	f.MergeCell(sheetName, "M3", "U3")
-	f.SetCellValue(sheetName, "M3", config.Name) // Set the name from config
-	f.SetCellValue(sheetName, "L5", "Monat")
-	f.MergeCell(sheetName, "M5", "U5")
+	if err := f.SetCellValue(sheetName, "L3", "Name"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "M3", "U3"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "M3", config.Name); err != nil { // Set the name from config
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "L5", "Monat"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.MergeCell(sheetName, "M5", "U5"); err != nil {
+		log.Printf("Error merging cells: %v", err)
+	}
 
 	// Add main table headers
 	headers := []string{"Tag", "Aus-löser", "Stärke", "Dauer (h)", "Pulsierend/ stechend", "Dumpf/ drückend", "Einseitig", "Beidseitig", "Vor-boten", "Erbrechen", "Übelkeit"}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%c10", 'A'+i)
-		f.SetCellValue(sheetName, cell, header)
+		if err := f.SetCellValue(sheetName, cell, header); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 	}
 
 	// Add accompanying symptoms headers
 	symptoms := []string{"Lärm-empfindl.", "Licht-empfindl.", "Geruchs-empfindl.", "Andere Symptome", "Medikament", "Tropfen/ Tabletten/ Zäpfchen", "Ja", "Nein", "Wenig"}
 	for i, symptom := range symptoms {
 		cell := fmt.Sprintf("%c10", 'L'+i)
-		f.SetCellValue(sheetName, cell, symptom)
+		if err := f.SetCellValue(sheetName, cell, symptom); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 	}
 
 	// Add new Oberbegriffe
 	oberBegriffe := []string{"Schmerzart und Ort", "Begleitsymptome", "Anzahl der", "Hat Ihnen das Mittel geholfen?"}
 	oberBegriffeColumns := []string{"A9:H9", "I9:O9", "P9:Q9", "R9:T9"}
 	for i, begriff := range oberBegriffe {
-		f.SetCellValue(sheetName, oberBegriffeColumns[i][:2], begriff)
-		f.MergeCell(sheetName, oberBegriffeColumns[i][:2], oberBegriffeColumns[i][3:])
+		if err := f.SetCellValue(sheetName, oberBegriffeColumns[i][:2], begriff); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
+		if err := f.MergeCell(sheetName, oberBegriffeColumns[i][:2], oberBegriffeColumns[i][3:]); err != nil {
+			log.Printf("Error merging cells: %v", err)
+		}
 	}
 
 	// Set style for Oberbegriffe
@@ -102,7 +179,9 @@ func createSheet(f *excelize.File, sheetName, month string, config Config) {
 		Fill:      excelize.Fill{Type: "pattern", Color: []string{"D9D9D9"}, Pattern: 1},
 		Border:    []excelize.Border{{Type: "all", Color: "000000", Style: 1}},
 	})
-	f.SetCellStyle(sheetName, "A9", "T9", oberBegriffeStyle)
+	if err := f.SetCellStyle(sheetName, "A9", "T9", oberBegriffeStyle); err != nil {
+		log.Printf("Error setting cell style: %v", err)
+	}
 
 	// Add main table headers (combined with accompanying symptoms)
 	headers = []string{
@@ -111,48 +190,98 @@ func createSheet(f *excelize.File, sheetName, month string, config Config) {
 	}
 	for i, header := range headers {
 		cell := fmt.Sprintf("%c10", 'A'+i)
-		f.SetCellValue(sheetName, cell, header)
+		if err := f.SetCellValue(sheetName, cell, header); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 	}
 
 	// Add day numbers and create table grid
 	for i := 1; i <= 31; i++ {
 		row := 11 + i
-		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), i)
-		f.SetCellValue(sheetName, fmt.Sprintf("U%d", row), i)
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), i); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("U%d", row), i); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 		for col := 'A'; col <= 'T'; col++ {
-			f.SetCellStyle(sheetName, fmt.Sprintf("%c%d", col, row), fmt.Sprintf("%c%d", col, row), getBorderedCellStyle(f))
+			if err := f.SetCellStyle(sheetName, fmt.Sprintf("%c%d", col, row), fmt.Sprintf("%c%d", col, row), getBorderedCellStyle(f)); err != nil {
+				log.Printf("Error setting cell style: %v", err)
+			}
 		}
 	}
 
 	// Add legend
-	f.SetCellValue(sheetName, "A43", "Schmerzstärke: 0-10 Punkte")
-	f.SetCellValue(sheetName, "A44", "(0= kein Schmerz, 10= stärkster Schmerz)")
+	if err := f.SetCellValue(sheetName, "A43", "Schmerzstärke: 0-10 Punkte"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A44", "(0= kein Schmerz, 10= stärkster Schmerz)"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
 
-	f.SetCellValue(sheetName, "A46", "Vorboten:")
-	f.SetCellValue(sheetName, "A47", "F  Flimmersehen")
-	f.SetCellValue(sheetName, "A48", "G  Gefühlsstörung (Kribbeln, Pelzigkeit)")
-	f.SetCellValue(sheetName, "A49", "S  Sprachstörung")
-	f.SetCellValue(sheetName, "A50", "O Anderes Symptom:")
+	if err := f.SetCellValue(sheetName, "A46", "Vorboten:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A47", "F  Flimmersehen"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A48", "G  Gefühlsstörung (Kribbeln, Pelzigkeit)"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A49", "S  Sprachstörung"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A50", "O Anderes Symptom:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
 
-	f.SetCellValue(sheetName, "A52", "Dauer der Schmerzen:")
-	f.SetCellValue(sheetName, "A53", "Geben Sie die Dauer in Stunden an")
+	if err := f.SetCellValue(sheetName, "A52", "Dauer der Schmerzen:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A53", "Geben Sie die Dauer in Stunden an"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
 
-	f.SetCellValue(sheetName, "A55", "Auslöser für Ihren Schmerz")
-	f.SetCellValue(sheetName, "A56", "1. Aufregung /Stress")
-	f.SetCellValue(sheetName, "A57", "2. Erholungsphase")
-	f.SetCellValue(sheetName, "A58", "3.Änderung im Schlaf-Wach Rhythmus")
-	f.SetCellValue(sheetName, "A59", "4. Menstruation")
-	f.SetCellValue(sheetName, "A60", "5. Ihr persönlicher Auslöser")
-	f.SetCellValue(sheetName, "A62", "6. Ein weiterer persönlicher Auslöser")
+	if err := f.SetCellValue(sheetName, "A55", "Auslöser für Ihren Schmerz"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A56", "1. Aufregung /Stress"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A57", "2. Erholungsphase"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A58", "3.Änderung im Schlaf-Wach Rhythmus"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A59", "4. Menstruation"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A60", "5. Ihr persönlicher Auslöser"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A62", "6. Ein weiterer persönlicher Auslöser"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
 
-	f.SetCellValue(sheetName, "A64", "Andere Begleitsymptome:")
-	f.SetCellValue(sheetName, "A65", "T  Augentränen")
-	f.SetCellValue(sheetName, "A66", "R  Augenrötung")
-	f.SetCellValue(sheetName, "A67", "N  Nasenlaufen / -Verstopfung")
+	if err := f.SetCellValue(sheetName, "A64", "Andere Begleitsymptome:"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A65", "T  Augentränen"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A66", "R  Augenrötung"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
+	if err := f.SetCellValue(sheetName, "A67", "N  Nasenlaufen / -Verstopfung"); err != nil {
+		log.Printf("Error setting cell value: %v", err)
+	}
 
 	// Set month if provided
 	if month != "" {
-		f.SetCellValue(sheetName, "M5", month)
+		if err := f.SetCellValue(sheetName, "M5", month); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 	}
 
 	// Check config to add sample data
@@ -161,8 +290,12 @@ func createSheet(f *excelize.File, sheetName, month string, config Config) {
 	}
 
 	// Add borders and styling to the entire table
-	f.SetCellStyle(sheetName, "A9", "U10", getHeaderStyle(f))
-	f.SetCellStyle(sheetName, "A11", "X42", getBorderedCellStyle(f))
+	if err := f.SetCellStyle(sheetName, "A9", "U10", getHeaderStyle(f)); err != nil {
+		log.Printf("Error setting cell style: %v", err)
+	}
+	if err := f.SetCellStyle(sheetName, "A11", "X42", getBorderedCellStyle(f)); err != nil {
+		log.Printf("Error setting cell style: %v", err)
+	}
 }
 
 func getHeaderStyle(f *excelize.File) int {
@@ -183,6 +316,7 @@ func getBorderedCellStyle(f *excelize.File) int {
 }
 
 func addSampleData(f *excelize.File, sheetName string, config Config) {
+	// #nosec G404 -- Using math/rand for non-cryptographic sample data generation
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	nextMedicationDay := 1
@@ -207,32 +341,51 @@ func addSampleData(f *excelize.File, sheetName string, config Config) {
 	for i := 1; i <= 31; i++ {
 		row := 11 + i
 
-		// Set "24 h" for duration
-		f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), "24 h")
+		// Set "Dauer (h)" to a random value between min and max
+		duration := r.Intn(config.MaxDurationHours-config.MinDurationHours+1) + config.MinDurationHours
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("D%d", row), fmt.Sprintf("%d h", duration)); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 
 		// Generate random strength between min and max intensity
 		strength := r.Intn(config.MaxIntensity-config.MinIntensity+1) + config.MinIntensity
-		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), strength)
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), strength); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 
-		// Set "x" for Dumpf/drückend
-		f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), "x")
+		// Set "Dumpf/drückend"
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("F%d", row), "x"); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 
-		// Set "x" for Lärm-empfindl., Licht-empfindl., and Geruchs-empfindl.
-		f.SetCellValue(sheetName, fmt.Sprintf("L%d", row), "x")
-		f.SetCellValue(sheetName, fmt.Sprintf("M%d", row), "x")
-		f.SetCellValue(sheetName, fmt.Sprintf("N%d", row), "x")
+		// Set "Lärm-empfindl.", "Licht-empfindl.", "Geruchs-empfindl."
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("L%d", row), "x"); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("M%d", row), "x"); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("N%d", row), "x"); err != nil {
+			log.Printf("Error setting cell value: %v", err)
+		}
 
 		// Add medication data every minDays to maxDays
 		if i == nextMedicationDay && len(validMedications) > 0 {
 			// Set medication letter
 			medication := validMedications[medicationIndex]
-			f.SetCellValue(sheetName, fmt.Sprintf("P%d", row), medication)
+			if err := f.SetCellValue(sheetName, fmt.Sprintf("P%d", row), medication); err != nil {
+				log.Printf("Error setting cell value: %v", err)
+			}
 
 			// Set helpfulness (randomly NOT HELPS or HELPS A BIT)
 			if r.Intn(2) == 0 {
-				f.SetCellValue(sheetName, fmt.Sprintf("S%d", row), "x") // NOT HELPS
+				if err := f.SetCellValue(sheetName, fmt.Sprintf("S%d", row), "x"); err != nil { // NOT HELPS
+					log.Printf("Error setting 'NOT HELPS' value: %v", err)
+				}
 			} else {
-				f.SetCellValue(sheetName, fmt.Sprintf("T%d", row), "x") // HELPS A BIT
+				if err := f.SetCellValue(sheetName, fmt.Sprintf("T%d", row), "x"); err != nil { // HELPS A BIT
+					log.Printf("Error setting 'HELPS A BIT' value: %v", err)
+				}
 			}
 
 			// Update next medication day and medication index
@@ -243,18 +396,19 @@ func addSampleData(f *excelize.File, sheetName string, config Config) {
 
 	// Modify the log statement
 	if len(validMedications) > 0 {
-		fmt.Printf("Sample data added to the spreadsheet '%s'. Medication applied every %d to %d days. Medications: %s\n",
+		log.Printf("Sample data added to the spreadsheet '%s'. Medication applied every %d to %d days. Medications: %s",
 			sheetName, config.MinDaysBetweenMedication, config.MaxDaysBetweenMedication, strings.Join(medicationNames, ", "))
 	} else {
-		fmt.Printf("Sample data added to the spreadsheet '%s'. No medication applied.\n", sheetName)
+		log.Printf("Sample data added to the spreadsheet '%s'. No medication applied.", sheetName)
 	}
 }
 
 func readConfig(filename string) (Config, error) {
 	var config Config
+	// #nosec G304 -- filename is always the literal "config.json" (main.go, gui.go); no external input reaches this path
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return config, err
+		return config, fmt.Errorf("error reading config file: %w", err)
 	}
 	err = json.Unmarshal(data, &config)
 	return config, err

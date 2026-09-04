@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -22,25 +23,30 @@ type Config struct {
 	OutputFilePath           string   `json:"output_file_path"`
 	MinIntensity             int      `json:"min_intensity"`
 	MaxIntensity             int      `json:"max_intensity"`
+	// New fields for duration hours
+	MinDurationHours int `json:"min_duration_hours"`
+	MaxDurationHours int `json:"max_duration_hours"`
 }
 
 // GenerateKopfschmerzkalender is declared here but implemented in kopfschmerzkalender_generator.go
 func GenerateKopfschmerzkalender(config Config) (string, error) {
-	fmt.Printf("Generating Kopfschmerzkalender with config: %+v\n", config)
+	log.Printf("Generating Kopfschmerzkalender with config: %+v", config)
 	f := excelize.NewFile()
 	defer func() {
 		if err := f.Close(); err != nil {
-			fmt.Println("Error closing Excel file:", err)
+			log.Println("Error closing Excel file:", err)
 		}
 	}()
 
 	// Remove the default Sheet1
-	f.DeleteSheet("Sheet1")
+	if err := f.DeleteSheet("Sheet1"); err != nil {
+		log.Printf("Warning: Failed to delete default Sheet1: %v", err)
+	}
 
-	fmt.Printf("Generating sheets for months: %v\n", config.Months)
+	log.Printf("Generating sheets for months: %v", config.Months)
 
-	// Check if config.Months is nil or empty
-	if config.Months == nil || len(config.Months) == 0 {
+	// Remove the unnecessary nil check
+	if len(config.Months) == 0 {
 		createSheet(f, "Kopfschmerzkalender", "", config)
 	} else {
 		for _, month := range config.Months {
@@ -66,6 +72,6 @@ func GenerateKopfschmerzkalender(config Config) (string, error) {
 		return "", fmt.Errorf("error saving Excel file: %v", err)
 	}
 
-	fmt.Printf("Excel file created successfully: %s\n", filePath)
+	log.Printf("Excel file created successfully: %s", filePath)
 	return filePath, nil
 }
